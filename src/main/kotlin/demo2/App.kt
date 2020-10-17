@@ -9,7 +9,7 @@ import java.util.Properties
 class App {
     val greeting: String
         get() {
-            return "Hello world."
+            return "Hello world!!"
         }
 }
 
