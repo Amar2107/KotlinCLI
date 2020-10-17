@@ -9,7 +9,7 @@ import java.util.Properties
 class App {
     val greeting: String
         get() {
-            return "Hello world!!"
+            return "Hello world"
         }
 }
 
@@ -20,7 +20,7 @@ fun main(args: Array<String>) {
     var password : String =args[1]
 
     if (AuthenticateCust(username,password).Authenticate())
-        println("Welcome")
+        println("Welcome!!")
     else
         println("Authentication error")
 
