@@ -8,7 +8,7 @@ class ConnectDB {
 
 
     internal var username : String = "root"
-    internal var password : String = "neonowl"
+    internal var password : String = "root"
 
      val con: Connection?
         get() {

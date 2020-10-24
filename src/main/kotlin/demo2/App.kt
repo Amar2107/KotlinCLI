@@ -3,43 +3,160 @@
  */
 package demo2
 
-import java.sql.*
-import java.util.Properties
+import com.github.ajalt.clikt.core.CliktCommand
 
-class App {
-    val greeting: String
-        get() {
-            return "Hello world"
+import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.prompt
+import com.github.ajalt.clikt.parameters.types.float
+import com.github.ajalt.clikt.parameters.types.int
+import java.util.*
+import kotlin.collections.ArrayList
+
+class  Hello : CliktCommand()
+{
+    val username : String by option(help = "Username").default("Admin")
+    val password : String by option(help = "Password").default("Admin")
+    val showcat by option("-showcategories",help = "show all categories").flag()
+    val showitems : String by option(help = "Select the category for items").default("")
+    val addtocart: String by option(help = "Enter item name you want to put in cart").default("")
+    val removefromcart: String by option(help = "Enter item name you want to remove from cart").default("")
+    val showcart by option("-showcart",help = "show all items in your cart").flag()
+    val buyitems by option("-buyitems",help = "buy all the items in the cart").flag()
+    val addcat by option("-addcat",help = "add a category admin privileges needed").flag()
+    val additems by option("-additems",help = "add items to a category admin privileges needed").flag()
+    val getusercart by option("-getusercart",help = "get a user cart admin privileges needed").flag()
+    val getuserorder by option("-getuserorder",help = "get a user orders admin privileges needed").flag()
+    val reguser by option("-reguser",help = "register a new user").flag()
+    fun printCat(category: ArrayList<Category>)
+    {
+        if(category.size == 0)
+            println("CATEGORY SET EMPTY")
+        else {
+            for (i in 0 until category.size)
+                println(category[i])
         }
+    }
+    fun printItm(item: ArrayList<Item>)
+    {
+        if(item.size == 0)
+            println("ITEM SET EMPTY")
+        else {
+            for (i in 0 until item.size)
+                println(item[i])
+        }
+    }
+
+    override fun run() {
+        var cust : Customer? = null
+        var admin_priv : Boolean = false
+        if(username.isNotEmpty()) {
+            if (AuthenticateCust(username, password).customerPresent()) {
+                if (AuthenticateCust(username, password).customerPresent()) {
+                    if (AuthenticateCust(username, password).Authenticate()) {
+                        println("Welcome")
+                        cust = AuthenticateCust(username, password).getCustomerByUser()!!
+                        if (AuthenticateCust(username, password).checkAdminPriv())
+                            admin_priv = true
+                        if (showcat) {
+                            val cat = getCategoryDet().getAllCategory()
+                            printCat(cat)
+                        }
+                        if (showitems.isNotEmpty()) {
+                            println("Entered Show Items")
+                            val catname = getCategoryDet().getCategoryByName(showitems)
+                            val itm = getItemDet().getAllItem(catname?.category_id!!)
+                            printItm(itm)
+
+                        }
+                        if (addtocart.isNotEmpty()) {
+                            val item = getItemDet()?.getItemByName(addtocart)!!
+                            CartAction(username).addToCart(item?.item_id!!)
+                        }
+                        if (removefromcart.isNotEmpty()) {
+                            val item = getItemDet()?.getItemByName(removefromcart)!!
+                            CartAction(username).removeItem(item?.item_id!!)
+                        }
+                        if (showcart)
+                            CartAction(username).printCartItems()
+                        if (buyitems) {
+                            OrderAction(username).buyItems()
+                            OrderAction(username).getCustomersOrder()
+                        }
+                        if (additems) {
+                            if (admin_priv) {
+                                println("Enter 1.item name 2.item price 3.item description 4.category name")
+                                val scan = Scanner(System.`in`)
+                                val itemname = scan.nextLine().trim()
+                                val itemprice = scan.nextLine().trim().toFloat()
+                                val itemdesc = scan.nextLine().trim()
+                                val catname = scan.nextLine().trim()
+                                var cat = getCategoryDet().getCategoryByName(catname)
+                                getItemDet().insertItem(itemname, itemprice, itemdesc, cat?.category_id!!)
+                            } else print("not a admin")
+                        }
+                        if (addcat) {
+                            if (admin_priv) {
+                                println("Enter 1.category name 2.category detail")
+                                val scan = Scanner(System.`in`)
+                                val catname = scan.nextLine().trim()
+                                val catdet = scan.nextLine().trim()
+                                getCategoryDet().insertCategory(catname, catdet)
+                            } else print("not a admin")
+                        }
+                        if (getusercart) {
+                            if (admin_priv) {
+                                println("Enter Customer name whose cart u want to search")
+                                val scan = Scanner(System.`in`)
+                                val custname = scan.nextLine().trim()
+                                val cust = getCustomerDet().getCustomer(custname)
+                                CartAction(username).getUserByCart(cust?.customer_id!!)
+                            }
+                        }
+                        if (getuserorder) {
+                            if (admin_priv) {
+                                println("Enter Customer name whose order u want to search")
+                                val scan = Scanner(System.`in`)
+                                val custname = scan.nextLine().trim()
+                                val cust = getCustomerDet().getCustomer(custname)
+                                OrderAction(username).getOrderByCust(cust?.customer_id!!)
+                            }
+                        }
+
+                    } else
+                        println("Authentication Failure")
+                } else println("User not present use option -register to register")
+            }
+        }
+        if(reguser)
+        {
+            println("Enter 1.Customer name 2. User name 3.Password")
+            val scan = Scanner(System.`in`)
+            val custname = scan.nextLine().trim()
+            val username = scan.nextLine().trim()
+            val password = scan.nextLine().trim()
+            val regus = getCustomerDet().registerCustomer(custname,username,password)
+            if(regus)
+                println("Entry for customer $custname created ")
+            else
+                println("Some error encountered")
+        }
+
+    }
 }
 
 
 fun main(args: Array<String>) {
-    println(App().greeting)
-    var username : String =args[0]
-    var password : String =args[1]
-
-    if (AuthenticateCust(username,password).Authenticate())
-        println("Welcome!!")
+    if(createTables().createCustomerTable()) {
+        Hello().main(args)
+    }
     else
-        println("Authentication error")
-
-    if(AuthenticateCust(username,password).checkAdminPriv())
-        println("is Admin")
-
-    val cust = getCustomerDet().getCustomer(username)
-    val cat = getCategoryDet().getAllCategory()
-    println(cat)
-    val itm = getItemDet().getAllItem(cat[0].category_id)
-    println()
-    println(itm[0])
-
-    getCartDet().addToCart(cust?.customer_id!!,itm[0])
-    val item = getCartDet().getAllCart(cust?.customer_id!!)
-    println(item)
-
-    getOrderDet().buyItem(1,item[0])
-
+        println("tables not created for operations")
 
 }
+
+
+
+
 

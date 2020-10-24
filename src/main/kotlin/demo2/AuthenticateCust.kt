@@ -3,12 +3,17 @@ package demo2
 class AuthenticateCust{
     var username : String
     var password : String
-    private val cust : Customer
+    var cust : Customer? = null
     constructor(username: String, password: String)
     {
         this.username = username
         this.password = password
-         cust = getCustomerDet().getCustomer(username)!!
+        if(customerPresent())
+            this.cust = getCustomerByUser()
+    }
+
+     fun customerPresent(): Boolean {
+         return !getCustomerDet().getCustomerId(username)!!
     }
 
     fun Authenticate(): Boolean {
@@ -19,5 +24,8 @@ class AuthenticateCust{
         return Authenticate() && (cust?.admin_priv == 1)
     }
 
+    fun getCustomerByUser(): Customer? {
+        return getCustomerDet().getCustomer(username)
+    }
 
 }
